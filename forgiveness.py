@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+"""
+Integrate with Wunderlist's API to postpone due dates.
+
+Find any tasks in the specified list that count as overdue, and nudge their
+due date up to today. This has two benefits:
+
+  - Tasks that would otherwise be overdue will now recur from their completion
+    date, which Wunderlist doesn't natively support.
+  - There isn't a big list of overdue tasks, and any guilt that goes along
+    with that.
+"""
+
 from datetime import date, datetime
 import logging
 from os import environ
