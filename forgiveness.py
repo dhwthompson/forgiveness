@@ -96,3 +96,6 @@ if __name__ == "__main__":
 
         logger.debug("Response status {}; content {}".format(
             patch_resp.status_code, patch_resp.content))
+
+    # Flush and close all handlers, just to make sure the logs show up
+    logging.shutdown()
