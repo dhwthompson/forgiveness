@@ -20,7 +20,7 @@ import urllib
 
 import requests
 
-API_ROOT = environ.get("API_ROOT")
+API_ROOT = environ.get("API_ROOT", "https://a.wunderlist.com/api/v1/")
 CLIENT_ID = environ.get("CLIENT_ID")
 ACCESS_TOKEN = environ.get("ACCESS_TOKEN")
 DEBUG = environ.get("DEBUG")
