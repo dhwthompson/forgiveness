@@ -35,7 +35,8 @@ logging.basicConfig(stream=sys.stdout,
                     level=logging.DEBUG if DEBUG else logging.INFO)
 logger = logging.getLogger()
 
-if __name__ == "__main__":
+
+def get_list_id(list_title):
     lists_url = urllib.parse.urljoin(API_ROOT, "lists")
     lists_response = requests.get(lists_url, headers=AUTH_HEADERS)
 
@@ -45,42 +46,51 @@ if __name__ == "__main__":
 
     try:
         list_info = lists_by_title[LIST_TITLE]
-    except KeyError:
-        logger.error("Couldn't find list with title %s" % LIST_TITLE)
-        sys.exit(1)
+    except KeyError as e:
+        raise KeyError("Couldn't find list with title %s" % LIST_TITLE) from e
 
     logger.debug(list_info)
 
-    list_id = list_info["id"]
+    return list_info["id"]
 
+
+def tasks_for_list(list_id):
     tasks_url = urllib.parse.urljoin(API_ROOT, "tasks")
 
     tasks_response = requests.get(tasks_url,
                                   params={"list_id": list_id},
                                   headers=AUTH_HEADERS)
+    return [{"id": t["id"],
+             "title": t["title"],
+             "revision": t["revision"],
+             "due_date": t.get("due_date")}
+            for t in tasks_response.json()]
 
-    def overdue(task):
-        due_date_str = task.get("due_date")
-        if not due_date_str:
-            return False
-        due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
-        return due_date < date.today()
 
-    tasks = [{"id": t["id"],
-              "title": t["title"],
-              "revision": t["revision"],
-              "due_date": t.get("due_date")}
-             for t in tasks_response.json()]
 
-    overdue_tasks = [t for t in tasks if overdue(t)]
+def overdue(task):
+    due_date_str = task.get("due_date")
+    if not due_date_str:
+        return False
+    due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
+    return due_date < date.today()
+
+
+
+def task_url(task_id):
+    return urllib.parse.urljoin(API_ROOT, "tasks/" + str(task_id))
+
+
+if __name__ == "__main__":
+
+    list_id = get_list_id(LIST_TITLE)
+    tasks = tasks_for_list(list_id)
 
     for task in tasks:
         logger.debug(task)
 
     logger.info("Found {} tasks; {} overdue".format(len(tasks), len(overdue_tasks)))
 
-    def task_url(task_id):
-        return urllib.parse.urljoin(API_ROOT, "tasks/" + str(task_id))
 
     new_due_date_str = date.today().isoformat()
 
