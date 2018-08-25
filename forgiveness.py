@@ -67,6 +67,14 @@ def tasks_for_list(list_id):
             for t in tasks_response.json()]
 
 
+def notes_for_list(list_id):
+    notes_url = urllib.parse.urljoin(API_ROOT, "notes")
+
+    notes_response = requests.get(notes_url,
+                                  params={"list_id": list_id},
+                                  headers=AUTH_HEADERS)
+    return {n['task_id']: n['content'] for n in notes_response.json()}
+
 
 def overdue(task):
     due_date_str = task.get("due_date")
@@ -75,6 +83,10 @@ def overdue(task):
     due_date = datetime.strptime(due_date_str, "%Y-%m-%d").date()
     return due_date < date.today()
 
+
+def excluded(task):
+    note_text = task.get("note") or ""
+    return "#noforgiveness" in note_text
 
 
 def task_url(task_id):
@@ -86,15 +98,26 @@ if __name__ == "__main__":
     list_id = get_list_id(LIST_TITLE)
     tasks = tasks_for_list(list_id)
 
+    notes = notes_for_list(list_id)
+
+    for task in tasks:
+        task["note"] = notes.get(task["id"])
+
     for task in tasks:
         logger.debug(task)
 
-    logger.info("Found {} tasks; {} overdue".format(len(tasks), len(overdue_tasks)))
+    excluded_tasks = [t for t in tasks if excluded(t)]
+    tasks_to_update = [t for t in tasks if overdue(t) and not excluded(t)]
 
+    logger.info(
+            "Found {} tasks; {} excluded; {} to update".format(
+                len(tasks),
+                len(excluded_tasks),
+                len(tasks_to_update)))
 
     new_due_date_str = date.today().isoformat()
 
-    for t in overdue_tasks:
+    for t in tasks_to_update:
         url = task_url(t["id"])
 
         if DRY_RUN:
