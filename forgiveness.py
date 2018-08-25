@@ -24,6 +24,7 @@ API_ROOT = environ.get("API_ROOT", "https://a.wunderlist.com/api/v1/")
 CLIENT_ID = environ.get("CLIENT_ID")
 ACCESS_TOKEN = environ.get("ACCESS_TOKEN")
 DEBUG = environ.get("DEBUG")
+DRY_RUN = environ.get("DRY_RUN")
 
 LIST_TITLE = environ.get("LIST_TITLE")
 
@@ -85,6 +86,11 @@ if __name__ == "__main__":
 
     for t in overdue_tasks:
         url = task_url(t["id"])
+
+        if DRY_RUN:
+            logger.info("Would have updated due date for {} to {}".format(t["title"], new_due_date_str))
+            continue
+
         patch_resp = requests.patch(url,
                                     headers=AUTH_HEADERS,
                                     json={"due_date": new_due_date_str,
